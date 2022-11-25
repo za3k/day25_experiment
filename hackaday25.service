@@ -1,0 +1,11 @@
+[Unit]
+Description=gunicorn3 for hackaday-25-experiment
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/hackaday/day25_experiment
+ExecStart=/bin/gunicorn3 -e SCRIPT_NAME=/hackaday/experiment --bind 0.0.0.0:8025 app:app
+
+[Install]
+WantedBy=multi-user.target
