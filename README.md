@@ -2,7 +2,7 @@ Hack-A-Day is a project I'm doing in November, where I try to make 30 new projec
 
 # Day 25: Hack-An-Experiment
 
-Experimentally determine the big-O runtime and constants of algorithms.
+Experimentally look at the runtime of sorting algorithms.
 
 [![Screenshot](screenshot.png)](https://tilde.za3k.com/hackaday/experiment)
 
