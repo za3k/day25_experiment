@@ -1,5 +1,35 @@
 /* -- This specific Hack-A-Day project -- */
 
+.algorithm > * {
+    display: block;
+    margin: 10px;
+}
+
+.algorithm label {
+    margin-right: 20px;
+}
+
+.error:not(:empty) {
+    margin: 20px;
+    background-color: pink;
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.formula {
+    color: darkgreen;
+    border: 1px lightgray solid;
+    border-radius: 10px;
+    padding: 10px;
+    outline: none;
+    width: 100%;
+    min-height: 20em;
+}
+.formula.failing {
+    box-shadow: 0 0 10px 10px red;
+}
+
 /* -- All Hack-A-Day projects -- */
 
 .container {

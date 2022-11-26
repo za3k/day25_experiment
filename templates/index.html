@@ -8,4 +8,15 @@
 {% endblock %}
 
 {% block content %}
+<div class="error"></div>
+<div class="algorithm">
+    <div>
+        <label>Algorithm:</label>
+        <select class="algorithm-name"></select>
+    </div>
+    <textarea class="formula"></textarea>
+    <input class="update btn btn-primary" type="submit" value="Run" />
+</div>
+<div class="results linear"></div>
+<div class="results log-log"></div>
 {% endblock %}

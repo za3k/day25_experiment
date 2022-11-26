@@ -3,26 +3,7 @@ let failures = {};
 let maxTime = 100; // in ms
 let maxArraySize = 1000;
 
-function editFunc(name, text) {
-    try {
-        const value = eval("(" + text + ")");
-        window[name] = value;
-        update();
-    } catch (e) {
-        $("#error").text(e);
-        return;
-    }
-    $("#error").text(null);
-}
-
-function loadFunction(name) {
-    const f = window[name];
-    const source = f.toString();
-    $("#formula").text(source);
-}
-
-function bubbleSort1() {
-    // Unoptimized bubble-sort
+function bubbleSort1() { // Unoptimized bubble-sort
     let swapped;
     do {
         swapped = false;
@@ -34,8 +15,7 @@ function bubbleSort1() {
         }
     } while (swapped);
 }
-function bubbleSort2() {
-    // Optimized bubble-sort
+function bubbleSort2() { // Optimized bubble-sort
     let swapped,j=this.length;
     do {
         swapped = false;
@@ -49,11 +29,14 @@ function bubbleSort2() {
     } while (swapped);
 }
 
-function customSort() {
+function customSort() { // Write your own!
+    // no direct access is provided to the array, so we can easily count compares and swaps
 
+    // this.cmp(index1, index2) returns -1, 0, or 1
+    // this.swap(index1, index2) swaps two indices
 }
 
-function quickSort1() {
+function quickSort1() { // Pivot on the last element
     function _quickSort(lo, hi) { // Inclusive
         if (lo >= hi) return;
         const pivotIndex = _quickPartition.bind(this)(lo, hi);
@@ -85,6 +68,35 @@ function insertionSort() {
 }
 
 (() => {
+    function editFunc(name, text) {
+        try {
+            const value = eval("(" + text + ")");
+            window[name] = value;
+        } catch (e) {
+            $(".error").text(e);
+            return;
+        }
+        $(".error").text(null);
+    }
+
+    function loadFunction(name) {
+        const f = window[name];
+        const source = f.toString();
+        $(".formula")[0].value=source;
+    }
+
+    function loadSelected() {
+        const selection = $(".algorithm-name").val();
+        loadFunction(selection);
+        $(".formula").toggleClass("failing", failures[$(".algorithm-name").val()]);
+    }
+
+    function saveSelected() {
+        const selection = $(".algorithm-name").val();
+        const code = $(".formula").val();
+        editFunc(selection, code);
+    }
+
     function shuffle(array) {
         let currentIndex = array.length, randomIndex;
         while (currentIndex > 0) {
@@ -157,6 +169,7 @@ function insertionSort() {
     // Adapted from https://d3-graph-gallery.com/graph/line_basic.html and https://d3-graph-gallery.com/graph/line_several_group.html
     // Updated using https://observablehq.com/@d3/d3-group
     function lineChart(data, {
+        div = d3.select(".results"),
         x,
         xScale = d3.scaleLinear,
         y,
@@ -175,14 +188,12 @@ function insertionSort() {
         rheight = height - margin.top - margin.bottom,
     } = {}) {
         // A basic box
-        const ret = d3.create('div');
-        const svg = ret.append("svg")
+        const svg = div.append("svg")
             .attr("width", rwidth + margin.left + margin.right)
             .attr("height", rheight + margin.top + margin.bottom)
             .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
-        const legend = ret.append("svg");
-
+        const legend = div.append("svg");
 
         // Separate into lines
         var sumstat = d3.group(data, d=> z(d));
@@ -258,11 +269,19 @@ function insertionSort() {
         legend
             .attr("height", (size+5) * sumstat.size);
 
-        return ret.node();
+        return div.node();
     }
 
     function update() {
-        const algorithms = window.algorithms = Object.keys(window).filter(x=>x.includes("Sort")).map(x=>window[x]);
+        const algorithms = window.algorithms = Object.keys(window).filter(x=>x.includes("Sort")).sort().map(x=>window[x]);
+        d3.select(".algorithm-name")
+            .selectAll("option")
+            .data(algorithms)
+            .enter().append("option")
+                //.attr("selected", (a,i)=>i==0)
+                .text(a=>a.name)
+                .attr("value", a=>a.name);
+
         const allData = window.allData = [];
         const content = $(".content");
         failures = {};
@@ -295,18 +314,22 @@ function insertionSort() {
                 name: "O(n^2)",
             })
         });
+
+        d3.selectAll(".results").selectChildren().remove();
         ["operations"].forEach(metric =>
-            content.append(lineChart(allData, {
+            lineChart(allData, {
+                div: d3.select(".results.linear"),
                 title: `sort time (${metric})`,
                 x: d => d.length,
                 y: d => d[metric],
                 z: d => d.name,
                 width,
                 height: 400,
-            }))
+            })
         );
         ["operations"].forEach(metric =>
-            content.append(lineChart(allData, {
+            lineChart(allData, {
+                div: d3.select(".results.log-log"),
                 title: `sort time (${metric}) - log-log`,
                 x: d => d.length,
                 y: d => d[metric],
@@ -315,8 +338,9 @@ function insertionSort() {
                 z: d => d.name,
                 width,
                 height: 400,
-            }))
+            })
         );
+        $(".formula").toggleClass("failing", failures[$(".algorithm-name").val()]);
     }
 
     function docReady(fn) { // https://stackoverflow.com/questions/9899372/vanilla-javascript-equivalent-of-jquerys-ready-how-to-call-a-function-whe. Avoiding jquery because it's messing up error display
@@ -330,6 +354,14 @@ function insertionSort() {
     }
     function main() {
         update();
+
+        $(".algorithm-name").on("input", loadSelected);
+        loadSelected();        
+
+        $(".update").on("click", () => {
+            saveSelected();
+            update();
+        });
     }
     docReady(main);
 })();
