@@ -2,7 +2,20 @@
 
 {% block header %}
     <h3>{% block title %}{{ project_name }}{% endblock %}</h3>
-    {{ description }}. {{ instructions | safe }}
+    <p>{{ description }}. {{ instructions | safe }}</p>
+    <p>Experimental Algorithmics is a field that tries to experimentally measure the running time of various algorithms. While best-fit methods can of course be used, here is a simple starting rule of thumb. Start with an input size that takes at least 1 second to process. Double the input size.
+    <ol>
+        <li>If the run time increases by 1x (doesn't change), your algorithm may be constant time.
+        <li>If the run time increases by 2X, your algorithm is linear-time.
+        <li>If the run time increases by 4X, your algorithm is quadratic.
+        <li>If the run time increases by 8X, your algorithm is cubic.
+        <li>If the run time increases by &lt;2X, your algorithm is sub-linear (for example, logarithmic).
+        <li>If the run time increases by a little more than 2X, your algorithm may have a runtime like O(n log n)
+    </ol>
+    Verify with a few more tests. If you don't get consistent results, there may be a random element, or you may be crossing some important threshold (for example, running out of RAM and starting to use swap memory).<br/><br/>
+
+    <p>For the examples shown here, I picked sorting because it is a well-studied problem most programmers are taught in school.
+    <hr>
     <script src="{{ url_for('static', filename='js/d3.js') }}"></script>
     <script src="{{ url_for('static', filename='index.js') }}"></script>
 {% endblock %}
@@ -11,12 +24,21 @@
 <div class="error"></div>
 <div class="algorithm">
     <div>
+        <label>maxArraySize</label>
+        <input id="maxArraySize" type="number"/>
+    </div>
+    <div>
+        <label>maxTimeMs</label>
+        <input id="maxTimeMs" type="number"/>
+    </div>
+    <div>
         <label>Algorithm:</label>
         <select class="algorithm-name"></select>
     </div>
     <textarea class="formula"></textarea>
     <input class="update btn btn-primary" type="submit" value="Run" />
 </div>
+<hr/>
 <div class="results linear"></div>
 <div class="results log-log"></div>
 {% endblock %}

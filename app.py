@@ -13,7 +13,7 @@ load_info({
     "source_url": "https://github.com/za3k/day25_experiment",
     "subdir": "/hackaday/experiment",
     "description": "Experimentally determine the runtime of algorithms",
-    "instructions": "",
+    "instructions": "All data shown in generated using javascript as you watch. Feel free to add a new sorting function yourself!",
     "login": False,
     "fullscreen": False,
 })

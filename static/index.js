@@ -1,6 +1,6 @@
 'use strict';
 let failures = {};
-let maxTime = 100; // in ms
+let maxTimeMs = 100; // in ms
 let maxArraySize = 1000;
 
 function bubbleSort1() { // Unoptimized bubble-sort
@@ -88,7 +88,7 @@ function insertionSort() {
     function loadSelected() {
         const selection = $(".algorithm-name").val();
         loadFunction(selection);
-        $(".formula").toggleClass("failing", failures[$(".algorithm-name").val()]);
+        $(".formula").toggleClass("failing", !!failures[$(".algorithm-name").val()]);
     }
 
     function saveSelected() {
@@ -161,7 +161,7 @@ function insertionSort() {
     function doSortN(S, n) {
         if (n > S.maxsize) return null;
         const r = _doSort(S, randomArray(n));
-        if (r.ms > maxTime) S.maxsize = n;
+        if (r.ms > maxTimeMs) S.maxsize = n;
         return r;
     }
     window.doN = doSortN
@@ -218,7 +218,7 @@ function insertionSort() {
         // color palette
         var color = d3.scaleOrdinal()
             .domain(sumstat.keys())
-            .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999']);
+            .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#8f8f33','#a65628','#f781bf','#999999']);
 
         if (title) {
             svg.append("text")
@@ -297,6 +297,7 @@ function insertionSort() {
                 if (!x.success) failures[S.name]=1;
             })
         });
+        /*
         Ns.forEach((i) => {
             allData.push({
                 length: i,
@@ -314,6 +315,7 @@ function insertionSort() {
                 name: "O(n^2)",
             })
         });
+        */
 
         d3.selectAll(".results").selectChildren().remove();
         ["operations"].forEach(metric =>
@@ -340,7 +342,7 @@ function insertionSort() {
                 height: 400,
             })
         );
-        $(".formula").toggleClass("failing", failures[$(".algorithm-name").val()]);
+        $(".formula").toggleClass("failing", !!failures[$(".algorithm-name").val()]);
     }
 
     function docReady(fn) { // https://stackoverflow.com/questions/9899372/vanilla-javascript-equivalent-of-jquerys-ready-how-to-call-a-function-whe. Avoiding jquery because it's messing up error display
@@ -362,6 +364,12 @@ function insertionSort() {
             saveSelected();
             update();
         });
+
+        $("#maxTimeMs").on("input", a => maxTimeMs=Number(a) );
+        $("#maxTimeMs")[0].value = maxTimeMs;
+
+        $("#maxArraySize").on("input", a => maxArraySize=Number(a) );
+        $("#maxArraySize")[0].value = maxArraySize;
     }
     docReady(main);
 })();
