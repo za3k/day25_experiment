@@ -1,4 +1,26 @@
 'use strict';
+let failures = {};
+let maxTime = 100; // in ms
+let maxArraySize = 1000;
+
+function editFunc(name, text) {
+    try {
+        const value = eval("(" + text + ")");
+        window[name] = value;
+        update();
+    } catch (e) {
+        $("#error").text(e);
+        return;
+    }
+    $("#error").text(null);
+}
+
+function loadFunction(name) {
+    const f = window[name];
+    const source = f.toString();
+    $("#formula").text(source);
+}
+
 function bubbleSort1() {
     // Unoptimized bubble-sort
     let swapped;
@@ -12,8 +34,26 @@ function bubbleSort1() {
         }
     } while (swapped);
 }
+function bubbleSort2() {
+    // Optimized bubble-sort
+    let swapped,j=this.length;
+    do {
+        swapped = false;
+        for (let i=1; i<j; i++) {
+            if (this.cmp(i-1, i) > 0) {
+                this.swap(i-1, i);
+                swapped = true;
+            }
+        }
+        j--;
+    } while (swapped);
+}
 
-function quickSort() {
+function customSort() {
+
+}
+
+function quickSort1() {
     function _quickSort(lo, hi) { // Inclusive
         if (lo >= hi) return;
         const pivotIndex = _quickPartition.bind(this)(lo, hi);
@@ -32,7 +72,28 @@ function quickSort() {
     return _quickSort.bind(this)(0, this.length-1);
 }
 
+function insertionSort() {
+    let i=1, j;
+    while (i<this.length) {
+        j=i;
+        while (j > 0 && this.cmp(j-1,j)>0) {
+            this.swap(j,j-1)
+            j--;
+        }
+        i++
+    }
+}
+
 (() => {
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex > 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
     function makeSwap(array) {
         if (typeof(array) != "object") throw "makeSwap should be called only on arrays";
         const swap = (i, j) => {
@@ -86,122 +147,176 @@ function quickSort() {
         return { name, ms, success, comparisons, swaps, operations, length, algorithm, A };
     }
     function doSortN(S, n) {
-        return _doSort(S, randomArray(n));
+        if (n > S.maxsize) return null;
+        const r = _doSort(S, randomArray(n));
+        if (r.ms > maxTime) S.maxsize = n;
+        return r;
     }
+    window.doN = doSortN
 
-    jQuery.readyException = function(error) {
-        throw error;
-    }
-
-    // Taken from https://observablehq.com/@d3/bar-chart
-    function BarChart(data, {
-        x = (d, i) => i,
-        y = d => d,
+    // Adapted from https://d3-graph-gallery.com/graph/line_basic.html and https://d3-graph-gallery.com/graph/line_several_group.html
+    // Updated using https://observablehq.com/@d3/d3-group
+    function lineChart(data, {
+        x,
+        xScale = d3.scaleLinear,
+        y,
+        yScale = d3.scaleLinear,
+        z,
         title,
-        marginTop = 20,
-        marginRight = 0,
-        marginBottom = 30,
-        marginLeft = 40,
+        margin = {
+            top: 50,
+            right: 30,
+            bottom: 30,
+            left: 60
+        },
         width = 640,
         height = 500,
-        xDomain,
-        xRange = [marginLeft, width - marginRight],
-        yType = d3.scaleLinear,
-        yDomain,
-        yRange = [height - marginBottom, marginTop],
-        xPadding = 0.1,
-        yFormat,
-        yLabel,
-        color = "currentColor"
+        rwidth = width - margin.left -margin.right,
+        rheight = height - margin.top - margin.bottom,
     } = {}) {
-        const X = d3.map(data, x);
-        const Y = d3.map(data, y);
+        // A basic box
+        const ret = d3.create('div');
+        const svg = ret.append("svg")
+            .attr("width", rwidth + margin.left + margin.right)
+            .attr("height", rheight + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+        const legend = ret.append("svg");
 
-        // Compute default domains, and unique the x-domain.
-        if (xDomain === undefined) xDomain = X;
-        if (yDomain === undefined) yDomain = [0, d3.max(Y)];
-        xDomain = new d3.InternSet(xDomain);
 
-        // Omit any data not present in the x-domain.
-        const I = d3.range(X.length).filter(i => xDomain.has(X[i]));
+        // Separate into lines
+        var sumstat = d3.group(data, d=> z(d));
+        
+        // x axis
+        var xs = xScale()
+            .domain(d3.extent(data, x))
+            .clamp(true)
+            .range([0, rwidth]);
+        svg.append("g")
+            .attr("transform", `translate(0, ${rheight})`)
+            .call(d3.axisBottom(xs));//.ticks(5));
 
-        // Construct scales, axes, and formats.
-        const xScale = d3.scaleBand(xDomain, xRange).padding(xPadding);
-        const yScale = yType(yDomain, yRange);
-        const xAxis = d3.axisBottom(xScale).tickSizeOuter(0);
-        const yAxis = d3.axisLeft(yScale).ticks(height / 40, yFormat);
+        // y axis
+        var ys = yScale()
+            .domain([1, d3.max(data, y)])
+            .clamp(true)
+            .range([rheight, 0]);
+        svg.append("g")
+            .call(d3.axisLeft(ys));
 
-        // Compute titles.
-        if (title == undefined) {
-            const formatValue = yScale.tickFormat(100, yFormat);
-            title = i => `${X[i]}\n${formatValue(Y[i])}`;
-        } else {
-            const O = d3.map(data, d => d);
-            const T = title;
-            title = i => T(O[i], i, data);
+        // color palette
+        var color = d3.scaleOrdinal()
+            .domain(sumstat.keys())
+            .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999']);
+
+        if (title) {
+            svg.append("text")
+                .attr("x", (rwidth/2))
+                .attr("y", -(margin.top / 2))
+                .attr("text-anchor", "middle")
+                .style("text-decoration", "underline")
+                .style("font-size", "16px")
+                .text(title);
         }
 
-        const svg = d3.create("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("viewBox", [0, 0, width, height])
-            .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+        svg.selectAll(".line")
+            .data(sumstat)
+            .enter().append("path")
+                .attr("fill", "none")
+                .attr("stroke", ([k,v]) => color(k))
+                .attr("stroke-width", 1.5)
+                .attr("d", ([k,values]) => {
+                    return d3.line()
+                        .x(d => xs(x(d)))
+                        .y(d => ys(y(d)))
+                        (values)
+                })
+                .append("title")
+                    .text(([k,v])=>k)
 
-        svg.append("g")
-            .attr("transform", `translate(${marginLeft},0)`)
-            .call(yAxis)
-            .call(g => g.select(".domain").remove())
-            .call(g => g.selectAll(".tick line").clone()
-                .attr("x2", width - marginLeft - marginRight)
-                .attr("stroke-opacity", 0.1))
-            .call(g => g.append("text")
-                .attr("x", -marginLeft)
-                .attr("y", 10)
-                .attr("fill", "currentColor")
-                .attr("text-anchor", "start")
-                .text(yLabel));
+        const size = 20;
+        legend.selectAll(".legend-dot")
+            .data(sumstat)
+            .enter().append("rect")
+                .attr("x", 0)
+                .attr("y", (d, i) => 0+i*(size+5))
+                .attr("width", size)
+                .attr("height", size)
+                .style("fill", ([k,v]) => color(k));
+        legend.selectAll(".legend-label")
+            .data(sumstat)
+            .enter().append("text")
+                .attr("x", 0 + size*1.2)
+                .attr("y", (d, i) => 0+i*(size+5) + size/2)
+                .attr("text-anchor", "left")
+                .style("alignment-baseline", "middle")
+                .style("fill", ([k,v]) => color(k))
+                .text(([k, v]) => {
+                    if (failures[k]) return `${k} (failing)`;
+                    else return k;
+                })
+        legend
+            .attr("height", (size+5) * sumstat.size);
 
-        const bar = svg.append("g")
-            .attr("fill", color)
-            .selectAll("rect")
-            .data(I)
-            .join("rect")
-                .attr("x", i=> xScale(X[i]))
-                .attr("y", i=> yScale(Y[i]))
-                .attr("height", i=>yScale(0) - yScale(Y[i]))
-                .attr("width", xScale.bandwidth());
-
-        if (title) bar.append("title")
-            .text("title");
-
-        svg.append("g")
-            .attr("transform", `translate(0,${height - marginBottom})`)
-            .call(xAxis);
-
-        return svg.node();
+        return ret.node();
     }
 
-    const algorithms = Object.keys(window).filter(x=>x.includes("Sort")).map(x=>window[x]);
-    function main() {
+    function update() {
+        const algorithms = window.algorithms = Object.keys(window).filter(x=>x.includes("Sort")).map(x=>window[x]);
+        const allData = window.allData = [];
+        const content = $(".content");
+        failures = {};
+        const width = content.width();
+        const logStep = 1.1; // 25 steps per power of 10
+        const max = Math.floor(Math.log(maxArraySize)/Math.log(logStep));
+        const Ns = [...Array(max).keys()].map(n=>Math.floor(Math.pow(logStep,n)));
+        //const Ns = [...Array(100).keys()];
         algorithms.forEach(function(S) {
-            const content = $(".content");
-            const width = content.width();
-            const data = [...Array(100).keys()].map(n=>({
-                x: n,
-                ...doSortN(S, n)
-            }));
-
-            const chart = BarChart(data, {
-                x: d => d.x,
-                y: d => d.operations,
-                yLabel: "operations",
-                width,
-                height: 500,
-                title: `${S.name}`,
-                color: "steelblue"
+            const data = Ns.map(n=>doSortN(S,n));
+            data.forEach(x => {
+                if (x && x.success) allData.push(x);
+                if (!x.success) failures[S.name]=1;
             })
-            $(".content").append($(chart));
-        })
+        });
+        Ns.forEach((i) => {
+            allData.push({
+                length: i,
+                operations: i,
+                name: "O(n)",
+            })
+            allData.push({
+                length: i,
+                operations: i*Math.log(i),
+                name: "O(n log n)",
+            })
+            allData.push({
+                length: i,
+                operations: i*i,
+                name: "O(n^2)",
+            })
+        });
+        ["operations"].forEach(metric =>
+            content.append(lineChart(allData, {
+                title: `sort time (${metric})`,
+                x: d => d.length,
+                y: d => d[metric],
+                z: d => d.name,
+                width,
+                height: 400,
+            }))
+        );
+        ["operations"].forEach(metric =>
+            content.append(lineChart(allData, {
+                title: `sort time (${metric}) - log-log`,
+                x: d => d.length,
+                y: d => d[metric],
+                xScale: d3.scaleLog,
+                yScale: d3.scaleLog,
+                z: d => d.name,
+                width,
+                height: 400,
+            }))
+        );
     }
 
     function docReady(fn) { // https://stackoverflow.com/questions/9899372/vanilla-javascript-equivalent-of-jquerys-ready-how-to-call-a-function-whe. Avoiding jquery because it's messing up error display
@@ -212,6 +327,9 @@ function quickSort() {
         } else {
             document.addEventListener("DOMContentLoaded", fn);
         }
+    }
+    function main() {
+        update();
     }
     docReady(main);
 })();
